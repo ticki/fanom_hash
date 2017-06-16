@@ -9,13 +9,6 @@
  *
  * But if you like licenses, than you may count it is under MIT Licence.
  */
-/*
- * Copyright (C) 2014 Sokolov Yura aka funny_falcon
- *
- * It is in public domain, free to use and modify by everyone for any usage.
- * I will be glad, if you put copyright notice above in your code or distribution, but you don't ought to.
- * I'm not responsible for any damage cause by this piece of code.
- */
 
 /* API */
 
@@ -56,7 +49,7 @@ fanom32_load_u24(const uint8_t *v, unsigned len)
 
 #define unlikely(a) (__builtin_expect(!!(a), 0))
 #define likely(a) (__builtin_expect(!!(a), 1))
-static inline uint32_t
+static uint32_t
 fanom32_permute_string(const uint8_t *v, size_t len, uint32_t seed1, uint32_t seed2)
 {
 	uint32_t a=0;

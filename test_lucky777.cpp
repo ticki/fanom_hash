@@ -8,8 +8,7 @@
 #include <map>
 #include <unordered_set>
 #include <string>
-#include "fanom_hash.h"
-#include "fanom_hash32.h"
+#include "lucky777.h"
 
 static uint64_t seed[2];
 
@@ -55,7 +54,6 @@ void table_rehash(table *table) {
 	}
 }
 
-static int use_32 = 0;
 void table_insert(table *table, const char* str, size_t len) {
 	uint64_t hash;
 	uint32_t pos;
@@ -64,11 +62,7 @@ void table_insert(table *table, const char* str, size_t len) {
 	if (table->size == table->bins) {
 		table_rehash(table);
 	}
-	if (use_32 == 0) {
-		hash = fanom64_string_hash2(str, len, seed[0], seed[1]);
-	} else {
-		hash = fanom32_string_hash2(str, len, (uint32_t)seed[0], (uint32_t)seed[1]);
-	}
+	hash = lucky777_string_hash2(str, len, seed[0], seed[1]);
 	pos = (uint32_t)hash & (table->bins - 1);
 	en = table->entries[pos];
 	while (en != NULL) {
@@ -145,8 +139,6 @@ int main(int argc, char** argv) {
 			use_std = 1;
 		} else if (strcmp(argv[i], "-c") == 0) {
 			check = 1;
-		} else if (strcmp(argv[i], "-32") == 0) {
-			use_32 = 1;
 		} else if (strcmp(argv[i], "-x") == 0) {
 			hex = 1;
 		} else if (strcmp(argv[i], "-o") == 0) {
@@ -176,11 +168,7 @@ int main(int argc, char** argv) {
 		lbuf = (char*)malloc(binary+1);
 		while ((lsize = fread(lbuf, 1, binary, stdin)) > 0) {
 			if (only_hash) {
-				if (use_32 == 0) {
-					sum += fanom64_string_hash2(lbuf, lsize, seed[0], seed[1]);
-				} else {
-					sum += fanom32_string_hash2(lbuf, lsize, seed[0], seed[1]);
-				}
+				sum += lucky777_string_hash2(lbuf, lsize, seed[0], seed[1]);
 			} else if (use_std == 0) {
 				table_insert(&tbl, lbuf, lsize);
 			} else {
@@ -196,11 +184,7 @@ int main(int argc, char** argv) {
 				lsize /= 2;
 			}
 			if (only_hash) {
-				if (use_32 == 0) {
-					sum += fanom64_string_hash2(lbuf, lsize, seed[0], seed[1]);
-				} else {
-					sum += fanom32_string_hash2(lbuf, lsize, seed[0], seed[1]);
-				}
+				sum += lucky777_string_hash2(lbuf, lsize, seed[0], seed[1]);
 			} else if (use_std == 0) {
 				table_insert(&tbl, lbuf, lsize);
 			} else {
@@ -208,7 +192,6 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
-
 	if (only_hash) {
 		printf("Sum = %u\n", sum);
 		return 0;
@@ -248,18 +231,14 @@ int main(int argc, char** argv) {
 				double ncoll = tbl.size - (uint32_t)counter.size();
 				double expected = 0;
 				uint32_t maxcnt = 0;
-				if (use_32) {
-					double d = pow(2,32);
-					double n = tbl.size;
-					/* https://en.wikipedia.org/wiki/Birthday_problem#Collision_counting */
-					expected = n - d + d*pow((d-1)/d, n);
-					if (expected > 0.01 && ncoll <= 2) {
-						ret = 0;
-					} else {
-						ret = expected*4 < ncoll;
-					}
+				double d = pow(2,32);
+				double n = tbl.size;
+				/* https://en.wikipedia.org/wiki/Birthday_problem#Collision_counting */
+				expected = n - d + d*pow((d-1)/d, n);
+				if (expected > 0.01 && ncoll <= 2) {
+					ret = 0;
 				} else {
-					ret = 1;
+					ret = expected*4 < ncoll;
 				}
 				for (auto& pair: counter) {
 					if (pair.second-1 > maxcnt) {
@@ -294,7 +273,6 @@ usage:
 		"  on exit it calculates and outputs checksum and table size.\n" 
 		"\t-b N   - input is binary, slice it to chunks of fixed size N\n" \
 		"\t-x     - input lines are hexified, so de-hexify it\n" \
-		"\t-32    - use 32bit fanom hash function\n" \
 		"\t-c     - at the end, compute checksum for all inserted strings\n" \
 		"\t-s     - use c++ set to check hash table implementation\n" \
 		"\t-o     - only hash, do not hash table\n" \
